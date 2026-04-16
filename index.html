@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>L'Oréal | Smart Routine &amp; Product Advisor</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link
@@ -21,40 +21,69 @@
       <header class="site-header">
         <img src="img/loreal-logo.png" alt="L'Oréal Logo" class="logo" />
         <h1 class="site-title">Smart Routine &amp; Product Advisor</h1>
+        <p class="site-tagline">Browse real L'Oréal products, build your personalized beauty routine with AI</p>
       </header>
 
-      <!-- Category Filter -->
-      <div class="search-section">
-        <select id="categoryFilter">
-          <option value="" disabled selected>Choose a Category</option>
-          <option value="cleanser">Cleansers</option>
-          <option value="moisturizer">Moisturizers & Treatments</option>
-          <option value="haircare">Haircare</option>
-          <option value="makeup">Makeup</option>
-          <option value="hair color">Hair Color</option>
-          <option value="hair styling">Hair Styling</option>
-          <option value="men's grooming">Men's Grooming</option>
-          <option value="suncare">Suncare</option>
-          <option value="fragrance">Fragrance</option>
-        </select>
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label for="categoryFilter"><i class="fa-solid fa-filter"></i> Category</label>
+          <select id="categoryFilter">
+            <option value="" disabled selected>Choose a Category</option>
+            <option value="all">All Products</option>
+            <option value="cleanser">Cleansers</option>
+            <option value="moisturizer">Moisturizers &amp; Treatments</option>
+            <option value="skincare">Skincare</option>
+            <option value="haircare">Haircare</option>
+            <option value="makeup">Makeup</option>
+            <option value="hair color">Hair Color</option>
+            <option value="hair styling">Hair Styling</option>
+            <option value="men's grooming">Men's Grooming</option>
+            <option value="suncare">Suncare</option>
+            <option value="fragrance">Fragrance</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="searchInput"><i class="fa-solid fa-search"></i> Search</label>
+          <input type="text" id="searchInput" placeholder="Search by name or keyword…" autocomplete="off" />
+        </div>
       </div>
 
       <!-- Products Grid -->
-      <div id="productsContainer" class="products-grid"></div>
+      <div id="productsContainer" class="products-grid">
+        <div class="placeholder-message">
+          <i class="fa-solid fa-sparkles"></i>
+          <p>Select a category or search to browse products</p>
+        </div>
+      </div>
 
       <!-- Selected Products -->
       <div class="selected-products">
-        <h2>Selected Products</h2>
-        <div id="selectedProductsList"></div>
-        <button id="generateRoutine" class="generate-btn">
-          <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Routine
+        <div class="selected-header">
+          <h2><i class="fa-solid fa-bag-shopping"></i> Selected Products</h2>
+          <button id="clearAllBtn" class="clear-all-btn" style="display:none;">
+            <i class="fa-solid fa-trash"></i> Clear All
+          </button>
+        </div>
+        <div id="selectedProductsList" class="selected-list">
+          <p class="empty-selection">No products selected yet — click a product card to add it</p>
+        </div>
+        <button id="generateRoutine" class="generate-btn" disabled>
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Generate My Routine
         </button>
       </div>
 
       <!------- Chat Area ------->
       <section class="chatbox">
-        <h2>Let's Build Your Routine</h2>
-        <div id="chatWindow" class="chat-window"></div>
+        <h2><i class="fa-solid fa-comments"></i> Your Beauty Advisor</h2>
+        <div id="chatWindow" class="chat-window">
+          <div class="msg assistant">
+            <div class="msg-avatar"><i class="fa-solid fa-spa"></i></div>
+            <div class="msg-bubble">
+              <p>Welcome! Select some products above and click <strong>"Generate My Routine"</strong> to get a personalized beauty routine. You can also ask me follow-up questions anytime.</p>
+            </div>
+          </div>
+        </div>
 
         <form id="chatForm" class="chat-form">
           <label for="userInput" class="visually-hidden">Message</label>
@@ -62,7 +91,7 @@
             id="userInput"
             name="userInput"
             type="text"
-            placeholder="Ask me about products or routines…"
+            placeholder="Ask a follow-up about your routine…"
             autocomplete="off"
             required
           />
@@ -73,11 +102,11 @@
         </form>
       </section>
 
-      <!------- Footer Links ------->
+      <!------- Footer ------->
       <footer class="site-footer">
         <p>&copy; 2025 L'Oréal. All rights reserved.</p>
+        <p class="footer-tagline">Because You're Worth It&trade;</p>
         <nav>
-          <!-- These URLs are placeholders -->
           <a href="#">Privacy Policy</a>
           <a href="#">Terms of Use</a>
           <a href="#">Contact</a>
@@ -85,7 +114,21 @@
       </footer>
     </div>
 
-    <!-- secrets.js can be removed when using Cloudflare Workers for API requests -->
+    <!-- Product Description Modal -->
+    <div id="productModal" class="modal-overlay" style="display:none;">
+      <div class="modal-content">
+        <button class="modal-close" id="modalClose"><i class="fa-solid fa-xmark"></i></button>
+        <img id="modalImage" src="" alt="" />
+        <h3 id="modalName"></h3>
+        <p id="modalBrand" class="modal-brand"></p>
+        <p id="modalCategory" class="modal-category"></p>
+        <p id="modalDescription" class="modal-desc"></p>
+        <button id="modalSelectBtn" class="modal-select-btn">
+          <i class="fa-solid fa-plus"></i> Add to Routine
+        </button>
+      </div>
+    </div>
+
     <script src="secrets.js"></script>
     <script src="script.js"></script>
   </body>
