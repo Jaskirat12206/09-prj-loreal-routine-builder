@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════
    L'Oréal Routine Builder — Full Logic
+   With Web Search & RTL LevelUps
    ═══════════════════════════════════════════ */
 
 /* ── DOM Elements ── */
@@ -13,8 +14,11 @@ const chatForm = document.getElementById("chatForm");
 const chatWindow = document.getElementById("chatWindow");
 const userInput = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
+const webSearchToggle = document.getElementById("webSearchToggle");
+const rtlToggle = document.getElementById("rtlToggle");
+const rtlLabel = document.getElementById("rtlLabel");
 
-// Modal elements
+// Modal
 const productModal = document.getElementById("productModal");
 const modalClose = document.getElementById("modalClose");
 const modalImage = document.getElementById("modalImage");
@@ -24,7 +28,7 @@ const modalCategory = document.getElementById("modalCategory");
 const modalDescription = document.getElementById("modalDescription");
 const modalSelectBtn = document.getElementById("modalSelectBtn");
 
-/* ── Configuration ── */
+/* ── Config ── */
 const API_URL = "https://loreal-chatbot.jaskiratsingh4752.workers.dev";
 
 /* ── State ── */
@@ -45,11 +49,34 @@ For follow-up questions:
 - Answer questions about the routine, products, skincare/haircare/makeup/fragrance topics
 - If asked something unrelated to beauty, politely redirect
 - Remember the conversation context including which products were selected
+- When web search is enabled, include relevant links and current information
 
 Tone: Warm, luxurious, knowledgeable — reflecting L'Oréal's "Because You're Worth It" identity.
 Keep responses concise (2-4 paragraphs max).`;
 
 const conversationHistory = [{ role: "system", content: SYSTEM_PROMPT }];
+
+/* ══════════════════════════════════════════
+   RTL TOGGLE (LevelUp: RTL Language Support)
+   ══════════════════════════════════════════ */
+function loadRTLPreference() {
+  const isRTL = localStorage.getItem("lorealRTL") === "true";
+  applyRTL(isRTL);
+}
+
+function applyRTL(isRTL) {
+  document.documentElement.setAttribute("dir", isRTL ? "rtl" : "ltr");
+  document.documentElement.setAttribute("lang", isRTL ? "ar" : "en");
+  rtlToggle.classList.toggle("active", isRTL);
+  rtlLabel.textContent = isRTL ? "LTR" : "RTL";
+}
+
+rtlToggle.addEventListener("click", () => {
+  const currentlyRTL = document.documentElement.getAttribute("dir") === "rtl";
+  const newRTL = !currentlyRTL;
+  localStorage.setItem("lorealRTL", newRTL);
+  applyRTL(newRTL);
+});
 
 /* ══════════════════════════════════════════
    LOAD PRODUCTS
@@ -62,7 +89,7 @@ async function loadProducts() {
 }
 
 /* ══════════════════════════════════════════
-   LOAD SAVED SELECTIONS FROM LOCALSTORAGE
+   LOCALSTORAGE — Save/Load Selections
    ══════════════════════════════════════════ */
 function loadSavedSelections() {
   try {
@@ -113,11 +140,9 @@ function displayProducts(products) {
     })
     .join("");
 
-  // Click to select/unselect
   document.querySelectorAll(".product-card").forEach((card) => {
     card.addEventListener("click", () => {
-      const id = parseInt(card.dataset.id);
-      toggleProduct(id);
+      toggleProduct(parseInt(card.dataset.id));
     });
   });
 }
@@ -144,8 +169,10 @@ function toggleProduct(id) {
 function updateCardStates() {
   document.querySelectorAll(".product-card").forEach((card) => {
     const id = parseInt(card.dataset.id);
-    const isSelected = selectedProducts.some((p) => p.id === id);
-    card.classList.toggle("selected", isSelected);
+    card.classList.toggle(
+      "selected",
+      selectedProducts.some((p) => p.id === id),
+    );
   });
 }
 
@@ -170,19 +197,15 @@ function renderSelectedProducts() {
     clearAllBtn.style.display = "inline-flex";
     generateBtn.disabled = false;
 
-    // Remove individual items
     document.querySelectorAll(".remove-tag").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = parseInt(btn.dataset.id);
-        toggleProduct(id);
-      });
+      btn.addEventListener("click", () =>
+        toggleProduct(parseInt(btn.dataset.id)),
+      );
     });
   }
 }
 
-/* ══════════════════════════════════════════
-   CLEAR ALL
-   ══════════════════════════════════════════ */
+/* ── Clear All ── */
 clearAllBtn.addEventListener("click", () => {
   selectedProducts = [];
   saveSelections();
@@ -206,14 +229,17 @@ function openModal(id) {
   modalDescription.textContent = product.description;
 
   const isSelected = selectedProducts.some((p) => p.id === id);
+  updateModalButton(isSelected);
+  productModal.style.display = "flex";
+}
+
+function updateModalButton(isSelected) {
   modalSelectBtn.innerHTML = isSelected
     ? '<i class="fa-solid fa-check"></i> Added to Routine'
     : '<i class="fa-solid fa-plus"></i> Add to Routine';
   modalSelectBtn.className = isSelected
     ? "modal-select-btn added"
     : "modal-select-btn";
-
-  productModal.style.display = "flex";
 }
 
 function closeModal() {
@@ -229,16 +255,9 @@ productModal.addEventListener("click", (e) => {
 modalSelectBtn.addEventListener("click", () => {
   if (!currentModalProduct) return;
   toggleProduct(currentModalProduct.id);
-
-  const isNowSelected = selectedProducts.some(
-    (p) => p.id === currentModalProduct.id,
+  updateModalButton(
+    selectedProducts.some((p) => p.id === currentModalProduct.id),
   );
-  modalSelectBtn.innerHTML = isNowSelected
-    ? '<i class="fa-solid fa-check"></i> Added to Routine'
-    : '<i class="fa-solid fa-plus"></i> Add to Routine';
-  modalSelectBtn.className = isNowSelected
-    ? "modal-select-btn added"
-    : "modal-select-btn";
 });
 
 /* ══════════════════════════════════════════
@@ -266,15 +285,12 @@ function getFilteredProducts() {
   return filtered;
 }
 
-categoryFilter.addEventListener("change", () => {
-  displayProducts(getFilteredProducts());
-});
+categoryFilter.addEventListener("change", () =>
+  displayProducts(getFilteredProducts()),
+);
 
 searchInput.addEventListener("input", () => {
-  // If user types without selecting a category, show all matches
-  if (!categoryFilter.value) {
-    categoryFilter.value = "all";
-  }
+  if (!categoryFilter.value) categoryFilter.value = "all";
   displayProducts(getFilteredProducts());
 });
 
@@ -316,31 +332,31 @@ function formatResponse(text) {
     const trimmed = para.trim();
     if (!trimmed) continue;
     const lines = trimmed.split("\n");
-    const isList = lines.every((l) => /^[-•*]\s/.test(l.trim()));
-    if (isList) {
+    const isBullets = lines.every((l) => /^[-•*]\s/.test(l.trim()));
+    const isNumbered = lines.every((l) => /^\d+[\.\)]\s/.test(l.trim()));
+
+    if (isBullets) {
       html +=
         "<ul>" +
         lines
           .map((l) => `<li>${esc(l.trim().replace(/^[-•*]\s*/, ""))}</li>`)
           .join("") +
         "</ul>";
+    } else if (isNumbered) {
+      html +=
+        "<ol>" +
+        lines
+          .map((l) => `<li>${esc(l.trim().replace(/^\d+[\.\)]\s*/, ""))}</li>`)
+          .join("") +
+        "</ol>";
     } else {
-      // Handle numbered lists like "1. Step one"
-      const isNumbered = lines.every((l) => /^\d+[\.\)]\s/.test(l.trim()));
-      if (isNumbered) {
-        html +=
-          "<ol>" +
-          lines
-            .map(
-              (l) => `<li>${esc(l.trim().replace(/^\d+[\.\)]\s*/, ""))}</li>`,
-            )
-            .join("") +
-          "</ol>";
-      } else {
-        html += `<p>${esc(trimmed)
-          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-          .replace(/\n/g, "<br>")}</p>`;
-      }
+      html += `<p>${esc(trimmed)
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(
+          /\[(.*?)\]\((https?:\/\/[^\)]+)\)/g,
+          '<a href="$2" target="_blank" class="citation-link">$1</a>',
+        )
+        .replace(/\n/g, "<br>")}</p>`;
     }
   }
   return html || `<p>${esc(text)}</p>`;
@@ -369,6 +385,76 @@ function hideTyping() {
 }
 
 /* ══════════════════════════════════════════
+   PARSE WEB SEARCH RESPONSE (LevelUp)
+   ══════════════════════════════════════════ */
+function extractWebSearchResponse(data, isWebSearch) {
+  // Regular chat completions format
+  if (!isWebSearch) {
+    const content = data.choices?.[0]?.message?.content;
+    return { text: content || "No response received.", citations: [] };
+  }
+
+  // Responses API format (web search)
+  // The output is an array of content blocks
+  let text = "";
+  let citations = [];
+
+  const output = data.output;
+  if (!output || !Array.isArray(output)) {
+    // Fallback: try chat completions format
+    const content = data.choices?.[0]?.message?.content;
+    if (content) return { text: content, citations: [] };
+    return { text: "No response received.", citations: [] };
+  }
+
+  for (const block of output) {
+    // message blocks contain the text
+    if (block.type === "message" && block.content) {
+      for (const part of block.content) {
+        if (part.type === "output_text") {
+          text += part.text;
+          // Extract annotations/citations
+          if (part.annotations) {
+            for (const ann of part.annotations) {
+              if (ann.type === "url_citation" && ann.url) {
+                citations.push({
+                  title: ann.title || ann.url,
+                  url: ann.url,
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (!text) {
+    return { text: "No response received.", citations: [] };
+  }
+
+  return { text, citations };
+}
+
+function formatCitations(citations) {
+  if (!citations || citations.length === 0) return "";
+
+  const uniqueCitations = citations.filter(
+    (c, i, arr) => arr.findIndex((x) => x.url === c.url) === i,
+  );
+
+  if (uniqueCitations.length === 0) return "";
+
+  let html = '<div class="citations-block"><strong>Sources:</strong><br>';
+  uniqueCitations.forEach((c, i) => {
+    const title = c.title || new URL(c.url).hostname;
+    html += `${i + 1}. <a href="${c.url}" target="_blank">${esc(title)}</a><br>`;
+  });
+  html += "</div>";
+  return html;
+}
+
+/* ══════════════════════════════════════════
    SEND MESSAGE TO CLOUDFLARE WORKER
    ══════════════════════════════════════════ */
 async function sendToAPI(userText) {
@@ -377,27 +463,51 @@ async function sendToAPI(userText) {
   userInput.disabled = true;
   sendBtn.disabled = true;
 
+  const useWebSearch = webSearchToggle.checked;
+
   try {
+    const body = {
+      messages: conversationHistory,
+    };
+
+    // LevelUp: Web Search — tell worker to enable web search tool
+    if (useWebSearch) {
+      body.web_search = true;
+      body.model = "gpt-4o";
+    }
+
     const response = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: conversationHistory }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) throw new Error(`API status ${response.status}`);
 
     const data = await response.json();
-    const aiMessage = data.choices[0].message.content;
+
+    // Parse response (handles both regular and web search formats)
+    const { text: aiMessage, citations } = extractWebSearchResponse(
+      data,
+      useWebSearch,
+    );
 
     conversationHistory.push({ role: "assistant", content: aiMessage });
     hideTyping();
-    appendBubble("assistant", aiMessage);
+
+    // Build response with citations if web search was used
+    let responseHTML = formatResponse(aiMessage);
+    if (useWebSearch && citations.length > 0) {
+      responseHTML += formatCitations(citations);
+    }
+
+    appendBubble("assistant", responseHTML, true);
   } catch (error) {
     console.error("API error:", error);
     hideTyping();
     appendBubble(
       "assistant",
-      "I'm having trouble connecting. Please check your Cloudflare Worker configuration and try again.",
+      "I'm having trouble connecting. Please check your Cloudflare Worker and try again.",
       true,
     );
   } finally {
@@ -447,4 +557,5 @@ chatForm.addEventListener("submit", (e) => {
 (async function init() {
   await loadProducts();
   loadSavedSelections();
+  loadRTLPreference();
 })();
